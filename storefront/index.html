@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head> 
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+
+    <title>DSE Surgery Planner</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+	
+    <!-- Custom styles for this template -->
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- DataTables (datatables.net) -->
+    <link rel="stylesheet" type="text/css" href="js/DataTables/datatables.css"/>
+    
+    <link rel="stylesheet" type="text/css" href="js/datetimepicker/jquery.datetimepicker.min.css" />
+    
+    <!-- Main Menu Template -->
+    <script id="menu-template" type="text/x-handlebars-template">
+
+          <h3>Öffentlicher Bereich</h3>
+          <ul class="nav nav-sidebar">
+            <li class=""><a class="menu-publicSlotlist" href="">Öffentliche OP-Slot Liste</a></li>
+          </ul>
+          
+        {{#xif usergroup 'patient'}}
+          <h3>Patienten</h3>
+          <ul class="nav nav-sidebar">
+            <li><a class="menu-reservations" href="">Reservierungen</a></li>
+            <li><a class="menu-notifications" href="">Notifications</a></li>
+          </ul>
+        {{/xif}}
+        
+        {{#xif usergroup 'doctor'}}
+          <h3>Ärzte Bereich</h3>
+          <ul class="nav nav-sidebar">
+            <li><a class="menu-doctorOPslots" href="">OP-Slot Liste</a></li>
+            <li><a class="menu-newReservation" href="">Neue Reservierung</a></li>
+            <li><a class="menu-notifications" href="">Notifications</a></li>
+          </ul>
+        {{/xif}}
+        
+        {{#xif usergroup 'hospital'}}
+          <h3>Krankenhäuser Bereich</h3>
+          <ul class="nav nav-sidebar">
+            <li><a class="menu-hospitalOPslots" href="">OP-Slot Liste</a></li>
+            <li><a class="menu-newOPslot" href="">Neuer OP-Slot</a></li>
+            <li><a class="menu-notifications" href="">Notifications</a></li>
+          </ul>
+        {{/xif}}
+        
+          <h3>Sonstiges</h3>
+          <ul class="nav nav-sidebar">
+            <li><a class="menu-status" href="">Service Status</a></li>
+          </ul>
+        
+    </script>
+    
+    <!-- Public OP-Slots Template -->
+    <script id="opslots-template" type="text/x-handlebars-template">
+
+        <h1>OP Slots</h1>
+    
+        <table class="opslots-table" class="display table table-striped" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Typ</th>
+                    {{#if doctor}}<th>Arzt</th>{{/if}}
+                    {{#if patient}}<th>Patient</th>{{/if}}
+                    {{#if hospital}}<th>Krankenhaus</th>{{/if}}
+                    <th>Startzeit</th>
+                    <th>Endzeit</th>
+                    {{#if status}}<th>Status</th>{{/if}}
+                    {{#if delete}}<th>Löschen</th>{{/if}}
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th>Typ</th>
+                    {{#if doctor}}<th>Arzt</th>{{/if}}
+                    {{#if patient}}<th>Patient</th>{{/if}}
+                    {{#if hospital}}<th>Krankenhaus</th>{{/if}}
+                    <th>Startzeit</th>
+                    <th>Endzeit</th>
+                    {{#if status}}<th>Status</th>{{/if}}
+                    {{#if delete}}<th>Löschen</th>{{/if}}
+                </tr>
+            </tfoot>
+        </table>
+        
+    </script>
+    
+    <!-- Reservations Template -->
+    <script id="reservations-template" type="text/x-handlebars-template">
+
+        <h1>Reservierungen</h1>
+    
+        <table class="reservations-table" class="display table table-striped" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Typ</th>
+                    <th>Arzt</th>
+                    <th>Krankenhaus</th>
+                    <th>Startzeit</th>
+                    <th>Endzeit</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th>Typ</th>
+                    <th>Arzt</th>
+                    <th>Krankenhaus</th>
+                    <th>Startzeit</th>
+                    <th>Endzeit</th>
+                </tr>
+            </tfoot>
+        </table>
+        
+    </script>
+    
+    <!-- Notifcations Template -->
+    <script id="notification-template" type="text/x-handlebars-template">
+
+        <h1>Benachrichtigungen</h1>
+    
+        <table class="notification-table" class="display table table-striped" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Benachrichtigungszeit</th>
+                    <th>Nachrichtentext</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th>Benachrichtigungszeit</th>
+                    <th>Nachrichtentext</th>
+                </tr>
+            </tfoot>
+        </table>
+        
+    </script>
+    
+    <!-- New OP-Slot Template -->
+    <script id="newOpSlot-template" type="text/x-handlebars-template">
+
+        <form class="form-horizontal form-newOpSlot">
+        <fieldset>
+
+        <!-- Form Name -->
+        <legend>Neuer OP-Slot</legend>
+
+        <!-- Text input-->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="startTime">Start Zeit</label>  
+          <div class="col-md-4">
+          <input id="startTime" name="startTime" type="text" placeholder="" class="form-control input-md datetimepicker" required="">
+            
+          </div>
+        </div>
+
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="length">Slot Länge</label>
+          <div class="col-md-4">
+            <select id="length" name="length" class="form-control">
+              <option value="60">60 min</option>
+              <option value="120">120 min</option>
+              <option value="180">180 min</option>
+              <option value="240">240 min</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="type">Typ</label>
+          <div class="col-md-4">
+            <select id="type" name="type" class="form-control">
+              <option value="AUGEN">AUGEN</option>
+              <option value="ORTHO">ORTHO</option>
+              <option value="HNO">HNO</option>
+              <option value="NEURO">NEURO</option>
+              <option value="KARDIO">KARDIO</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Button -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="submit">Absenden</label>
+          <div class="col-md-4">
+            <button type="submit" id="submit" name="submit" class="btn btn-primary">Button</button>
+          </div>
+        </div>
+        
+        </fieldset>
+        </form>
+
+        
+    </script>
+    
+    <!-- New Reservation Template -->
+    <script id="newReservation-template" type="text/x-handlebars-template">
+
+        <form class="form-horizontal form-newReservation">
+        <fieldset>
+
+        <!-- Form Name -->
+        <legend>Neue Reservierung</legend>
+
+        <!-- Text input-->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="begin">Zeitraum Anfang</label>  
+          <div class="col-md-4">
+          <input id="begin" name="begin" type="text" placeholder="" class="form-control input-md datetimepicker" required="">
+            
+          </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="end">Zeitraum Ende</label>  
+          <div class="col-md-4">
+          <input id="end" name="end" type="text" placeholder="" class="form-control input-md datetimepicker" required="">
+            
+          </div>
+        </div>
+        
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="duration">Slot Länge</label>
+          <div class="col-md-4">
+            <select id="duration" name="duration" class="form-control">
+              <option value="60">60 min</option>
+              <option value="120">120 min</option>
+              <option value="180">180 min</option>
+              <option value="240">240 min</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="patient">Patient</label>
+          <div class="col-md-4">
+            <select id="patient" name="patient" class="form-control">
+                {{#each user}}
+                    <option value="{{id}}">{{name}}</option>
+                {{/each}}
+            </select>
+          </div>
+        </div>
+
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="type">Typ</label>
+          <div class="col-md-4">
+            <select id="type" name="type" class="form-control">
+              <option value="AUGEN">AUGEN</option>
+              <option value="ORTHO">ORTHO</option>
+              <option value="HNO">HNO</option>
+              <option value="NEURO">NEURO</option>
+              <option value="KARDIO">KARDIO</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Button -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="submit">Absenden</label>
+          <div class="col-md-4">
+            <button type="submit" id="submit" name="submit" class="btn btn-primary">Button</button>
+          </div>
+        </div>
+        
+        </fieldset>
+        </form>
+
+        
+    </script>
+    
+    <!-- New Reservation Template -->
+    <script id="userSelection-template" type="text/x-handlebars-template">
+
+        <select class="userSelection-select input-sm" name="userSelection">
+            {{#each user}}
+                <option value="{{id}}">{{name}}</option>
+            {{/each}}
+        </select>
+    
+    </script>
+    
+    <!-- Status Template -->
+    <script id="status-template" type="text/x-handlebars-template">
+
+       <h1>Status</h1>
+       
+        <ul>
+            <li>API Gateway: {{status.apigateway}}</li>
+            <li>Master Data: {{status.masterdata}}</li>
+            <li>Booking: {{status.booking}}</li>
+            <li>OP Scanner: {{status.opscanner}}</li>
+            <li>Ringme: {{status.ringme}}</li>
+        </ul>
+    
+    </script>
+                    
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <!-- Mobile Navigation
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button> -->
+          <a class="navbar-brand" href="#">DSE Surgery Planner</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <button id="addTestData" type="button" class="nav navbar-nav navbar-right">Erzeuge Testdaten</button>
+          <button id="deleteAll" type="button" class="nav navbar-nav navbar-right">Lösche alle Daten</button>
+          <button id="addNotification" type="button" class="nav navbar-nav navbar-right">Notification hinzufügen</button>
+        
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+
+          <!-- Search
+          <form class="navbar-form navbar-right">
+            <input type="text" class="form-control" placeholder="Search...">
+          </form> -->
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+      
+        <div class="col-sm-3 col-md-2 sidebar">
+        
+            <!-- Usergroup Selection -->
+            <div>
+                <select id="usergroup" name="usergroup" class="input-sm">
+                  <option value="public">Öffentlich</option>
+                  <option value="patient">Patienten</option>
+                  <option value="doctor">Ärzte</option>
+                  <option value="hospital">Krankenhäuser</option>
+                </select>
+            </div>
+          
+            <!-- User Selection -->
+            <div id="user-selection">
+
+            </div>
+      
+            <!-- MENU -->
+            <div id="main-menu">
+            </div>
+
+        </div>
+        <!-- END MENU -->
+        <!-- MAIN WINDOW -->
+        <div id="main-window" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        
+          <h1 class="page-header">Dashboard</h1>
+
+          <h2 class="sub-header">Section title</h2>
+
+        </div>
+        <!-- END MAIN WINDOW -->
+      </div>
+    </div>
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/jquery-1.12.3.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Handlebar Template Engine (handlebarsjs.com) -->
+    <script src="js/handlebars-v4.0.5.js"></script>
+    
+    <!-- DataTables (datatables.net) -->
+    <script type="text/javascript" src="js/DataTables/datatables.js"></script>
+    
+    <script type="text/javascript" src="js/datetimepicker/jquery.datetimepicker.full.min.js"></script>
+    
+    <script type="text/javascript" src="js/storefront.js"></script>
+    
+    <script type="text/javascript" src="js/jquery-dateFormat.min.js"></script>
+    
+  </body>
+</html>

@@ -1,0 +1,253 @@
+swagger: '2.0'
+info:
+  version: '1.0.0'
+  title: Distributed Systems Engineering
+host: localhost
+basePath: /v1
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /opSlots:
+    get:
+      tags:
+        - Gast
+        - Patient
+        - Arzt
+        - Krankenhaus
+      description: Eine Liste mit opSlots (reserviert oder nicht) [1a,2a,3a,4a]
+      operationId: getOpSlots
+      produces:
+        - application/json
+      parameters:
+      
+        - name: sort
+          in: query
+          description: sort by
+          required: false
+          type: array
+          items:
+            $ref: '#/definitions/sortBy'
+            
+        - name: filter
+          in: query
+          description: filter by
+          required: false
+          type: array
+          items:
+            $ref: '#/definitions/filterBy'
+            
+        - name: limit
+          in: query
+          description: maximum number of results to return
+          required: false
+          type: integer
+          
+        - name: userGroup
+          in: query
+          required: true
+          description: 1=Gast 2=Patient 3=Arzt 4=Krankenhaus
+          type: integer
+          
+        - name: userId
+          in: query
+          description: Id des verwendeten Users
+          required: true
+          type: integer
+          
+      responses:
+        '200':
+          description: opSlot response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/opSlot'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+    post:
+      tags:
+        - Krankenhaus
+      description: Erzeuge einen neuen opSlot [4b]
+      operationId: addOpSlot
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/opSlot"
+      responses:
+        '200':
+          description: opSlot response
+          schema:
+            $ref: '#/definitions/opSlot'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+            
+  /opSlots/{slotId}:
+    delete:
+      tags:
+        - Krankenhaus
+      description: Löschen eines opSlots [4c]
+      operationId: deleteOpSlot
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: slotId
+          description: ID des opSlots
+          required: true
+          type: integer
+      responses:
+        '204':
+          description: reservation deleted
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+          
+  /notifications:
+    get:
+      tags:
+        - Patient
+        - Arzt
+        - Krankenhaus
+      description: Returns all pets from the system that the user has access to [2b,3d,4d]
+      operationId: getNotifications
+      produces:
+        - application/json
+      parameters:
+        - name: limit
+          in: query
+          description: maximum number of results to return
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: notification response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/notification'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+           
+  /reservations:
+    post:
+      tags:
+        - Arzt
+      description: Erzeuge eine neue Reservierung [3b]
+      operationId: addReservation
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/newReservation"
+      responses:
+        '200':
+          description: opSlot response
+          schema:
+            $ref: '#/definitions/opSlot'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+            
+  /reservations/{slotId}:
+    delete:
+      tags:
+        - Arzt
+      description: Storniert eine Reservierung [3c]
+      operationId: deleteReservation
+      parameters:
+        - name: slotId
+          in: path
+          description: ID des opSlots
+          required: true
+          type: integer
+      responses:
+        '204':
+          description: reservation deleted
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errorModel'
+            
+definitions:
+  opSlot:
+    type: object
+    description: opSlots
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+  newReservation:
+    type: object
+    description: Settings für eine neue Reservierungen
+    properties:
+      id:
+        type: integer
+      startDateTime:
+        type: string
+      endDateTime:
+        type: string
+      length: 
+        type: integer
+      patientId:
+        type: integer
+      doctorId:
+        type: integer
+        
+  notification:
+    type: object
+    description: Benachrichtigungen
+    properties:
+      id:
+        type: integer
+      text:
+        type: string
+        
+  sortBy:
+    type: object
+    description: Sortieren von Abfragen
+    properties:
+      name:
+        type: string
+        description: Sortierung nach Datum
+      direction:
+        type: string
+  filterBy:
+    type: object
+    description: Filtern von Abfragen
+    properties:
+      name:
+        type: string
+        description: Mögliche Werte sind date, minTime, maxTime, opType, hospital, doctor, status, patient, operateur
+      value:
+        type: string
+  errorModel:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+
